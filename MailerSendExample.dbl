@@ -1,0 +1,50 @@
+
+;;; <summary>
+;;; The main entry point for the application.
+;;; </summary>
+main MailerSendExample
+    record
+        result, boolean
+        SenderName, string
+        SenderAddress, string
+        RecipientNames, [#]string
+        RecipientAddresses, [#]string
+        Subject, string
+        BodyText, string
+        BodyHtml, string
+        ErrorMessage1, string
+        ErrorMessage2, string
+    endrecord
+
+    external function
+        MailerSend, boolean
+    endexternal
+
+proc
+
+    SenderName = "Steve Ives"
+    SenderAddress = "steve@steveives.com"
+    RecipientNames = new String[1]
+    RecipientNames[1] = "Steve Ives"
+    RecipientAddresses = new String[1]
+    RecipientAddresses[1] = "steve.ives@synergex.com"
+    Subject = "This is a test message"
+    BodyText = "This is a test message"
+    BodyHtml = "<h1>This is a test message</h1>"
+
+    result = %MailerSend(SenderName,SenderAddress,RecipientNames,RecipientAddresses,Subject,BodyText,BodyHtml,ErrorMessage1,ErrorMessage2)
+
+    if result then
+        Console.WriteLine("The message was sent!")
+    else
+    begin
+        Console.WriteLine("The message was NOT sent!")
+        Console.WriteLine("Error message was: " + ErrorMessage1)
+        Console.WriteLine("Error text was: " + ErrorMessage2)
+    end
+
+    Console.Write("Press ENTER: ")
+    Console.ReadLine()
+    Console.WriteLine("")
+
+endmain

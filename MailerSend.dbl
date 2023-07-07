@@ -1,0 +1,91 @@
+
+import System.Text
+import System.Text.Json
+
+function MailerSend, boolean
+    required in SenderName, string
+    required in SenderAddress, string
+    required in RecipientNames, [#]string
+    required in RecipientAddresses, [#]string
+    required in Subject, string
+    required in BodyText, string
+    required in BodyHtml, string
+    required out ErrorMessage1, string
+    required out ErrorMessage2, string
+
+    stack record
+        result, boolean
+        requestBody, string
+    endrecord
+
+proc
+    result = true
+
+    ;;TODO: Validate parameters
+
+
+    ;;Build the JSON message
+    begin
+        data jsonBuffer = new StringBuilder()
+        data jsonWriter = Utf8JsonWriter.CreateUtf8JsonWriter(jsonBuffer)
+        data ix, int
+
+        jsonWriter.WriteStartObject()
+
+        jsonWriter.WriteStartObject("from")
+        jsonWriter.WriteString("email",SenderAddress)
+        jsonWriter.WriteString("name",SenderName)
+        jsonWriter.WriteEndObject()
+
+        jsonWriter.WriteStartArray("to")
+        for ix from 1 thru RecipientNames.Length
+        begin
+            jsonWriter.WriteStartObject()
+            jsonWriter.WriteString("email",RecipientAddresses[ix])
+            jsonWriter.WriteString("name",RecipientNames[ix])
+            jsonWriter.WriteEndObject()
+        end
+        jsonWriter.WriteEndArray()
+
+        jsonWriter.WriteString("subject",Subject)
+        jsonWriter.WriteString("text",BodyText)
+        jsonWriter.WriteString("html",BodyHtml)
+
+        jsonWriter.WriteEndObject()
+        jsonWriter.Flush()
+        jsonWriter.Reset()
+
+        requestBody = jsonBuffer.ToString()
+    end
+
+    ;;Send the message to the MailerSend API
+    begin
+        data status, int
+        data responseBody, string
+        data requestHeaders, [#]string
+        data responseHeaders, [#]string
+
+        requestHeaders = new string[3]
+        requestHeaders[1] = "host: api.mailersend.com"
+        requestHeaders[2] = "content-type: application/json"
+        requestHeaders[3] = "authorization: Bearer mlsn.e8ffb1c1b8b5f321b8ed05dc4f87862f892c72d35eafc6891a5ac546a0d2abd5"
+
+        status = %http_post("https://api.mailersend.com/v1/email",,requestBody,responseBody,ErrorMessage1,requestHeaders,responseHeaders,"mailersend.log")
+
+        using status select
+        (0,200,201,202,204),
+            nop
+        (400,401,403,404,405,408,421,422,429,500,502,503,504),
+        begin
+            data jdoc = JsonDocument.Parse(responseBody)
+            data rootElement = jdoc.RootElement
+            data messageElement = rootElement.GetProperty("message")
+            ErrorMessage2 = messageElement.GetString()
+            result = false
+        end
+        endusing
+    end
+
+    freturn result
+
+endfunction
