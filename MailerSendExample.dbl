@@ -1,4 +1,6 @@
 
+import SynPSG.EmailTools
+
 ;;; <summary>
 ;;; The main entry point for the application.
 ;;; </summary>
@@ -7,8 +9,8 @@ main MailerSendExample
         result, boolean
         SenderName, string
         SenderAddress, string
-        RecipientNames, [#]string
-        RecipientAddresses, [#]string
+        RecipientName, string
+        RecipientAddress, string
         Subject, string
         BodyText, string
         BodyHtml, string
@@ -33,13 +35,11 @@ proc
     Console.Write("Sender address   : ")
     SenderAddress = Console.ReadLine()
 
-    RecipientNames = new String[1]
     Console.Write("Recipient name   : ")
-    RecipientNames[1] = Console.ReadLine()
+    RecipientName = Console.ReadLine()
 
-    RecipientAddresses = new String[1]
     Console.Write("Recipient address: ")
-    RecipientAddresses[1] = Console.ReadLine()
+    RecipientAddress = Console.ReadLine()
 
     Console.Write("Message subject  : ")
     Subject = Console.ReadLine()
@@ -51,7 +51,7 @@ proc
     Console.WriteLine("Sending message...")
     Console.WriteLine("----------------------------------------")
 
-    result = %MailerSend(SenderName,SenderAddress,RecipientNames,RecipientAddresses,Subject,BodyText,ErrorMessage)
+    result = MailerSend.SendMessage(SenderName,SenderAddress,RecipientName,RecipientAddress,Subject,BodyText,false,ErrorMessage)
 
     Console.WriteLine("Message status:")
 
