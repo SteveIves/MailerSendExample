@@ -5,6 +5,12 @@ VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{BBD0F5D1-1CC4-42FD-BA4C-A96779C64378}") = "MailerSendExample", "MailerSendExample.synproj", "{AD4546DE-E9C8-498C-91A4-85317A7B8834}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{97EBF580-F3C6-4110-A5E1-97D8FDC5460E}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

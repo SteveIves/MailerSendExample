@@ -12,8 +12,7 @@ main MailerSendExample
         Subject, string
         BodyText, string
         BodyHtml, string
-        ErrorMessage1, string
-        ErrorMessage2, string
+        ErrorMessage, string
     endrecord
 
     external function
@@ -22,27 +21,49 @@ main MailerSendExample
 
 proc
 
-    SenderName = "Steve Ives"
-    SenderAddress = "steve@steveives.com"
-    RecipientNames = new String[1]
-    RecipientNames[1] = "Steve Ives"
-    RecipientAddresses = new String[1]
-    RecipientAddresses[1] = "steve.ives@synergex.com"
-    Subject = "This is a test message"
-    BodyText = "This is a test message"
-    BodyHtml = "<h1>This is a test message</h1>"
+    xcall flags(7004020,1)
 
-    result = %MailerSend(SenderName,SenderAddress,RecipientNames,RecipientAddresses,Subject,BodyText,BodyHtml,ErrorMessage1,ErrorMessage2)
+    Console.WriteLine("----------------------------------------")
+    Console.WriteLine("Enter email details:")
+    Console.WriteLine("----------------------------------------")
+
+    Console.Write("Sender name      : ")
+    SenderName = Console.ReadLine()
+
+    Console.Write("Sender address   : ")
+    SenderAddress = Console.ReadLine()
+
+    RecipientNames = new String[1]
+    Console.Write("Recipient name   : ")
+    RecipientNames[1] = Console.ReadLine()
+
+    RecipientAddresses = new String[1]
+    Console.Write("Recipient address: ")
+    RecipientAddresses[1] = Console.ReadLine()
+
+    Console.Write("Message subject  : ")
+    Subject = Console.ReadLine()
+
+    Console.Write("Message content  : ")
+    BodyText = Console.ReadLine()
+
+    Console.WriteLine("----------------------------------------")
+    Console.WriteLine("Sending message...")
+    Console.WriteLine("----------------------------------------")
+
+    result = %MailerSend(SenderName,SenderAddress,RecipientNames,RecipientAddresses,Subject,BodyText,ErrorMessage)
+
+    Console.WriteLine("Message status:")
 
     if result then
         Console.WriteLine("The message was sent!")
     else
     begin
         Console.WriteLine("The message was NOT sent!")
-        Console.WriteLine("Error message was: " + ErrorMessage1)
-        Console.WriteLine("Error text was: " + ErrorMessage2)
+        Console.WriteLine("Error message was: " + ErrorMessage)
     end
 
+    Console.WriteLine("")
     Console.Write("Press ENTER: ")
     Console.ReadLine()
     Console.WriteLine("")

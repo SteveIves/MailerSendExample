@@ -9,22 +9,53 @@ function MailerSend, boolean
     required in RecipientAddresses, [#]string
     required in Subject, string
     required in BodyText, string
-    required in BodyHtml, string
-    required out ErrorMessage1, string
-    required out ErrorMessage2, string
+    required out ErrorMessage, string
 
     stack record
-        result, boolean
+        ok, boolean
         requestBody, string
+        apiToken, string
     endrecord
 
 proc
-    result = true
+    ok = true
+    ErrorMessage = ""
 
-    ;;TODO: Validate parameters
+    ;TODO: Validate parameters
 
 
-    ;;Build the JSON message
+    ;Get the API token from MailerSend.settings.json
+    if (ok)
+    begin
+        data tmpch, i4
+        data tmpbuf, a80
+        try
+        begin
+            open(tmpch=0,i:s,"MailerSendApiToken.txt")
+            reads(tmpch,tmpbuf)
+            if (tmpbuf) then
+                apiToken = %atrimtostring(tmpbuf)
+            else
+            begin
+                ErrorMessage = "Failed to read API token from MailerSendApiToken.txt"
+                ok = false
+            end
+        end
+        catch (e, @Exception)
+        begin
+            ErrorMessage = "Failed to read API token from MailerSendApiToken.txt"
+            ok = false
+        end
+        finally
+        begin
+            if (tmpch)
+                close tmpch
+        end
+        endtry
+    end
+
+    ;Build the JSON message
+    if (ok)
     begin
         data jsonBuffer = new StringBuilder()
         data jsonWriter = Utf8JsonWriter.CreateUtf8JsonWriter(jsonBuffer)
@@ -49,7 +80,6 @@ proc
 
         jsonWriter.WriteString("subject",Subject)
         jsonWriter.WriteString("text",BodyText)
-        jsonWriter.WriteString("html",BodyHtml)
 
         jsonWriter.WriteEndObject()
         jsonWriter.Flush()
@@ -58,7 +88,8 @@ proc
         requestBody = jsonBuffer.ToString()
     end
 
-    ;;Send the message to the MailerSend API
+    ;Send the message to the MailerSend API
+    if (ok)
     begin
         data status, int
         data responseBody, string
@@ -68,9 +99,9 @@ proc
         requestHeaders = new string[3]
         requestHeaders[1] = "host: api.mailersend.com"
         requestHeaders[2] = "content-type: application/json"
-        requestHeaders[3] = "authorization: Bearer mlsn.e8ffb1c1b8b5f321b8ed05dc4f87862f892c72d35eafc6891a5ac546a0d2abd5"
+        requestHeaders[3] = "authorization: Bearer " + apiToken
 
-        status = %http_post("https://api.mailersend.com/v1/email",,requestBody,responseBody,ErrorMessage1,requestHeaders,responseHeaders,"mailersend.log")
+        status = %http_post("https://api.mailersend.com/v1/email",,requestBody,responseBody,ErrorMessage,requestHeaders,responseHeaders,"mailersend.log")
 
         using status select
         (0,200,201,202,204),
@@ -80,12 +111,12 @@ proc
             data jdoc = JsonDocument.Parse(responseBody)
             data rootElement = jdoc.RootElement
             data messageElement = rootElement.GetProperty("message")
-            ErrorMessage2 = messageElement.GetString()
-            result = false
+            ErrorMessage = messageElement.GetString()
+            ok = false
         end
         endusing
     end
 
-    freturn result
+    freturn ok
 
 endfunction

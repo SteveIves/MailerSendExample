@@ -14,6 +14,7 @@
     <EnableCommonProperties>True</EnableCommonProperties>
     <CommonPropertiesFileLocation>$(SolutionDir)Common.props</CommonPropertiesFileLocation>
     <RootNamespace>MailerSendExample</RootNamespace>
+    <ProjEnvVars>MAILERSEND_API_TOKEN=Put your API token here</ProjEnvVars>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <IncludeDebugInformation>true</IncludeDebugInformation>
@@ -52,8 +53,9 @@
     <Compile Include="MailerSendExample.dbl" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="MailerSend API Token.txt">
+    <Content Include="MailerSendApiToken.txt">
       <SubType>Content</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Synergex\dbl\Synergex.SynergyDE.Traditional.targets" />
