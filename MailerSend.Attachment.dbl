@@ -1,0 +1,65 @@
+
+namespace SynPSG.EmailTools.MailerSend
+
+    ;;; <summary>
+    ;;; 
+    ;;; </summary>
+    public class Attachment
+
+        public readwrite property FileSpec, string
+        public readwrite property FileName, string
+        public readwrite property FileContentBase64, string
+        public readwrite property Disposition, string
+        public readwrite property EmbedId, string
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        public method Attachment
+            required in FileToAttach, string
+            record
+                fileContentHandle, D_HANDLE
+                fileContentString, string
+            endrecord
+        proc
+            if (!FileTools.FileToHandle(FileToAttach,fileContentHandle = %mem_proc(DM_ALLOC,1)))
+            begin
+                throw new ApplicationException("Failed to load file " + FileToAttach)
+            end
+
+            FileSpec = FileToAttach
+
+            ;Get the base file spec
+            begin
+                data name, a80
+                data ext, a20
+                xcall parse(FileSpec,,,,,name,ext)
+                FileName = %atrim(name) + %atrim(ext)
+            end
+
+            fileContentString = %string_from_handle(fileContentHandle)
+
+            fileContentHandle = %mem_proc(DM_FREE,fileContentHandle)
+
+            FileContentBase64 = DataEncoding.ToBase64(fileContentString)
+
+            Disposition = "attachment"
+
+        endmethod
+
+        ;;; <summary>
+        ;;; Attach a file and specify an id that can be used to embed the file in the message body.
+        ;;; To do do, use an HTML body and use <img src="cid:AttachmentId"/> to embed the file.
+        ;;; </summary>
+        public method Attachment
+            required in FileToAttach, string
+            required in AttachmentId, string
+            this(FileToAttach)
+        proc
+            this.Disposition = "inline"
+            this.EmbedId = AttachmentId
+        endmethod
+
+    endclass
+
+endnamespace

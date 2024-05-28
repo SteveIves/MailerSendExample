@@ -49,12 +49,31 @@
     <DebugOptimize>Optimize</DebugOptimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MailerSend.dbl" />
-    <Compile Include="MailerSendExample.dbl" />
+    <Compile Include="FileTools.dbl" />
+    <Compile Include="MailerSend.MailMessage.dbl" />
+    <Compile Include="MailerSend.Example.dbl" />
+    <Compile Include="MailerSend.MailRecipient.dbl" />
+    <Compile Include="MailerSend.MailSender.dbl" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="MailerSendApiToken.txt">
+    <Content Include="DIBOL_For_Beginners_1984.pdf">
       <SubType>Content</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="MailerSend.ApiToken.txt">
+      <SubType>Content</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Compile Include="MailerSend.Attachment.dbl">
+      <SubType>Content</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="REL_DBL.TXT">
+      <SubType>Content</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SynergexLogo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

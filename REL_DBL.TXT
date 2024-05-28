@@ -1,0 +1,881 @@
+Synergy DBL
+Version 12.1.1.3278
+Release Notes
+April 2022
+
+These release notes describe changes that have been made in 
+Synergy DBL in version 12. 
+
+__________________________________________________________________
+CONTENTS
+
+Important Notes and Warnings
+Change History
+Restrictions
+Open Incidents
+
+__________________________________________________________________
+IMPORTANT NOTES AND WARNINGS
+
+-- If you are upgrading from a previous version of Synergy, we 
+strongly recommend that you review the Quick Migration Guide and 
+the Updating Synergy/DE manual for important upgrade information.
+
+_________________________
+Compatibility
+
+-- Version 12 will run traditional code compiled and linked with 
+Synergy/DE 9.1 and higher. You do not have to recompile unless 
+you want to take advantage of performance improvements (or to 
+debug if you're coming from a version prior to 10.3).
+
+-- .NET Framework 4.7.2 is now the minimum Framework supported. 
+This version or higher is required in order to install Synergy.
+[tr#38415]
+
+-- (.NET) The .NET Core runtime now only supports .NET 6 
+and higher. [tr#39591] 
+
+-- (UNIX) The minimum supported version of OpenSSL is 1.0.*x 
+on all UNIX platforms; Linux also supports 1.1.1. For more 
+information, see the "OpenSSL Requirements" topic in the 
+Synergy/DE documentation (https://www.synergex.com/docs). 
+[tr#37519]
+
+-- (AIX) OpenSSL must be at least version 1.0.2r. You can verify 
+your version using the command "openssl version". For example, 
+
+$ openssl version                                      
+OpenSSL 1.0.2r  26 Feb 2019
+
+If you don't have the correct version, you can download from IBM: 
+https://www14.software.ibm.com/webapp/iwm/web/preLogin.do?source=aixbp.
+You'll need to log in with a valid username and password.
+
+-- (OpenVMS) OpenSSL from HPE is unmaintained and should no 
+longer be considered secure. Although previous versions 
+continue to work, we don't recommend using them. Instead, we 
+recommend that you only use OpenSSL 1.1.1 from VSI, which is 
+available with a support contract. You can download the latest 
+version at https://vmssoftware.com/products/openssl/.
+
+-- Data encryption for prior versions of Synergy/DE (9.3.1, 9.5.1, 
+9.5.3, and 10.1.1) cannot interoperate with data encrypted with 
+10.1.1a or higher. Failure to decrypt the data in the prior version 
+and re-encrypt it in 10.1.1a or higher will cause the data to be 
+inaccessible. THIS CHANGE MAY BREAK YOUR CODE IF USED ALONGSIDE 
+OLDER VERSIONS. [tr#34363]
+
+-- The default protocol for the Synergy HTTP document transport 
+API is also now TLS 1.2, and the default minimum SSL cipher has 
+been changed from TLS 1.0 to TLS 1.2. [tr#36033, tr#38281]
+
+-- If you are using non-Synergex-provided classes and you rebuild 
+any object module using a class, YOU MUST REBUILD all object 
+modules using that class.  
+
+-- (Windows, UNIX) Synergy/DE 12 on Linux and Windows 32-bit 
+systems requires a processor with at least SSE2 instructions 
+(i.e., AMD Athlon 64 or higher and Pentium IV or higher). For 
+Windows, the Sysinternals Coreinfo tool can indicate this. 
+Programs like LMU will fail to operate and the installation 
+will fail without this instruction support. [tr#35398]
+
+-- (Linux) Because Linux now supports license forwarding (which
+forwards license requests to a Windows license server), there
+is an additional prompt in the install.sde script when doing a
+new install. If you have automated your installation, this change
+MAY BREAK YOUR INSTALLATION. Also, this means that if you automate
+installations for different versions of SDE, those for SDE 12
+and higher will need to account for this prompt, while those for
+pre-v12 will not. [tr#39320]
+
+_________________________________
+Version 12 notes and warnings
+
+-- (Windows) Visual C++ 2019 libraries from Visual Studio 2022 
+are installed by Synergy/DE Client. If you are currently running 
+a shared installation and upgrading from version 9.3 through 
+10.3.3, you must also upgrade the clients. If you do not wish to 
+upgrade (or uninstall/reinstall) the clients, and your shared 
+installation has not changed location, you can instead download 
+the appropriate Visual Studio 2019 redistributables (vcredist) 
+from the Microsoft website and install them on each client 
+machine. See the version 12 installation instructions for more 
+information. If you already have the Visual C++ libraries from 
+2019 installed, you do not have to upgrade them.
+
+-- Due to the lack of a decimal key type, a mismatch between a 
+decimal join expression and the inner table join key occurs, 
+which will now cause a ' ' to '0' conversion on the lookup key, 
+as it is common on OpenVMS for a decimal key value to have 
+leading zeros rather than leading blanks. THIS MAY BREAK YOUR 
+EXISTING CODE if you have already converted your inner table key 
+data to have leading blanks instead of zeros. To disable this 
+new behavior, you can set the new environment variable 
+SYNSEL_NUMALPHA_CONVERT=0. On Windows and UNIX, this behavior is 
+disabled by default as we recommend you type your inner key as 
+decimal to avoid the type mismatch. However, it can be enabled by 
+setting SYNSEL_NUMALPHA_CONVERT=1. [tr#39516]
+
+__________________________________________________________________
+CHANGE HISTORY
+
+__________________________________________________________________
+REVISION 12.1.1.3278
+
+_________________________
+Compiler
+
+-- The compiler no longer reports an unexpected W_LITTRUNC 
+warning when an integer value is passed into an i8 dynamic array. 
+[tr#39717]
+
+-- The traditional compiler reports a level 3 W_NOOPER warning 
+when comparing a non-object type to ^NULL. If you get this 
+warning (assuming avar is a descriptor field), the workaround is 
+to replace "if (avar != NULL)" with "if (avar)" and 
+"if (avar == NULL)" with "if (!avar)". Future versions of the 
+compiler are likely to make this a hard error. [tr#39725]
+
+_________________________
+Debugger
+
+-- When using the Visual Studio mode of the debugger with an ELB 
+containing modules whose compiler level uses source line mapping 
+information lower than version 9, the debugger no longer 
+crashes on startup. [tr#39687]
+
+_________________________
+Runtime
+
+-- (Windows, UNIX) To aid in debugging, we added event log 
+(Windows) and syslog (UNIX) messages when a server mismatch 
+error occurs on an OPEN. [tr#39681]
+
+-- (.NET) If a channel is closed while a channel operation is in 
+use on another thread, an E_WRONGTHREAD exception is now 
+generated. [tr#38236]
+
+-- Examining an instance field inside a static method of a class 
+no longer causes a seg fault and now reports a "Cannot reference 
+class field from static method" error. [tr#39697]
+
+-- (.NET) In 11.1.1 and higher, multi-threaded programs didn't 
+always work correctly with multiple xfServer servers. Opening 
+channels to different remote servers no longer results in a
+potential seg fault. [tr#39686]
+
+-- (Windows) We fixed a problem that caused an "unexpected 0 
+value error in wntutl.c" in rare cases on runtime startup. 
+[tr#39694]
+
+-- (.NET) In 12.0.1 builds 3272 through 3275, when using the 
+Synergy socket API, %SS_GETPEERNAME and %SS2_GETPEERNAME returned 
+the remote socket address instead of the local socket address. 
+Socket API operations to a particular subset of IP addresses 
+could result in Argument Out Of Range exceptions. Calls to 
+recvfrom also resulted in exceptions. These issues have been 
+fixed. [tr#39708]
+
+-- Over time, the OPEN statement, Select constructor, and HTTP 
+document transport API got slower due to additional environment 
+variables. This has been fixed. [tr#39704]
+
+-- A Where object that contains a Where.Keynum() can now be 
+reused in subsequent Selects, where previously, the specified 
+keynum was not being transferred to the next Select. A Where 
+object that contains a Where.Portable() cannot be reused due to 
+its relation to a specific record and file. Reuse of a Where 
+object with Where.Portable() will now generate an $ERR_INVOPER 
+error ("Where expressions with lefthand function (Portable)
+cannot be reused"). [tr#39379]
+
+-- %CNV_PI now works for negative numbers where the variable size 
+is less than the bit size of the machine, for example, i2 on a 
+32-bit machine or i4 on a 64-bit machine. [tr#39710]
+
+-- (.NET) In 12.0.1 builds 3274 through 3277, SLEEP crashed the 
+.NET Core runtime. This has been fixed. [tr#39718]
+
+________________________
+Synergy DBMS
+
+-- (UNIX) The isutl utility now attempts to maintain file 
+ownership, group, and file modes if permissions allow it. A 
+warning will be displayed if any of these attributes cannot be 
+reset to their original state. [tr#39660]
+
+-- Pressing Ctrl+C while isutl is processing one of several 
+ISAM files (in a wildcard or multi-file specification) now 
+interrupts processing of the current file and cancels further 
+processing of subsequent files. [tr#39674]
+
+-- Fconvert no longer hangs when using a remote input file 
+coming from an encrypted server. [tr#39684]
+
+_________________________
+Synergy .NET assembly API
+
+-- (.NET Core) The Synergy .NET assembly API now works for 
+.NET Core. [tr#39707]
+
+_________________________
+Synergy XML API
+
+-- Parsing an invalid XML file using %XML_PARSER_PARSEFILE no 
+longer causes a stack overflow error and instead produces an 
+appropriate message about 1000 children being exceeded. [tr#39672]
+
+__________________________________________________________________
+REVISION 12.0.1.3275
+
+_________________________
+Compiler
+
+-- (Windows, Unix) We added compiler support for 
+CREATE_SERVER_CONNECTION(), DESTROY_SERVER_CONNECTION(), and the 
+SERVERCONNECTION open qualifier. [tr#39508]
+
+-- We added a new define, SYN_BUILDNUMBER, which provides access
+to the build number of the compiler at compile time (the
+traditional Synergy compiler or the Synergy .NET compiler).
+[tr#39513]
+
+-- Due to the lack of a decimal key type, a mismatch between a 
+decimal join expression and the inner table join key occurs, 
+which will now cause a ' ' to '0' conversion on the lookup key, 
+as it is common on OpenVMS for a decimal key value to have 
+leading zeros rather than leading blanks. THIS MAY BREAK YOUR 
+EXISTING CODE if you have already converted your inner table key 
+data to have leading blanks instead of zeros. To disable this 
+new behavior, you can set the new environment variable 
+SYNSEL_NUMALPHA_CONVERT=0. On Windows and UNIX, this behavior 
+is disabled by default, as we recommend you type your inner key 
+as decimal to avoid the type mismatch. However, it can be enabled 
+by setting SYNSEL_NUMALPHA_CONVERT=1. Logging via DBG_SELECT has 
+been enhanced to report and suggest usage when encountered. 
+[tr#39516]
+
+-- The dbl compiler now reports an F_OPENOUT error if the 
+variable review file does not exist after building using 
+-qvar_review. [tr#39618]
+
+-- The traditional compiler now reports a NOOPER error 
+when doing comparisons between non-object types (such as
+descriptors) and ^NULL. This tracker was superseded by
+tr#39725, which changed this error to a warning. [tr#39595]
+
+-- The traditional compiler no longer reports an unexpected 
+NOTCEXP error when nesting an IF directive using ^DEFINED() 
+in the false section of an .IFDEF/.ELSE/.ENDC. [tr#39586]
+
+-- TYPPARM warnings are now shown for external functions when 
+passing compiler flags -qrelaxed:param:paramad and 
+-qrelaxed:param:paramst without also needing to pass 
+-qrelaxed:extf. [tr#39335]
+
+-- We fixed an unexpected INVRECFLD error when doing an include 
+of an empty repository structure. [tr#39333]
+
+-- Type inference for local data statements has been fixed so 
+that assigning the result of a function call to the local data 
+variable will not cause an unexpected TYPPARM error for each 
+argument passed to the function. [tr#39321]
+
+-- The compiler no longer reports an ITOPBAD error when passing 
+a .NET static event as the first argument to ADDHANDLER() or 
+REMOVEHANDLER(). [tr#39420]
+
+-- (UNIX) In 11.1.1g and 11.1.1h, in rare cases, an XCALL SPAWN, 
+FORK, EXEC, or RUNJB after an SSC_INIT call could cause the 
+command to fail. This has been fixed. [tr#39531]
+
+-- (.NET) We fixed a problem with channel allocation in the .NET 
+runtime when DBG_SELECT logging is turned on. [tr#39535]
+
+-- (.NET) When used inside a dbr/dbs with the .NET assembly API, 
+rpsutl no longer fails at some future unrelated routine call 
+if licensing is not configured. In addition, an OPEN to a pipe 
+in Synergy .NET also correctly reports any errors at the open, 
+instead of some random unrelated statement later. [tr#39546]
+
+-- (Windows, UNIX) A potential segmentation fault no longer 
+occurs during Select.OrderBy or a NONKEY_SEQUENTIAL read of an 
+ISAM file with change tracking enabled. [tr#39548]
+
+-- (UNIX) When remote debugging via Telnet to a UNIX program, the 
+next READS from the terminal after a STEP/GO no longer causes an 
+unexpected ^M in the input buffer. [tr#39538]
+
+-- (Windows) We fixed a problem where, in rare cases with multiple 
+monitors of different scaling on an RDP seamless desktop session, 
+the runtime sometimes crashed. [tr#39447]
+
+-- (UNIX) We corrected the runtime so that if libtinfo.so.6 is 
+in use and system option #30 is set, the screen escape sequences 
+continue to work. [tr#39565]
+
+-- (Windows) We fixed issues on Windows 11 and Windows Server 2022 
+where controls and backgrounds were not being repainted. 
+[tr#39578]
+
+-- Command line processing for dblnet2xml, dbl2xml, and dblproto
+has been changed to allow equal signs in filenames. DBL files
+containing one or more equal signs in their filename will no
+longer be truncated at the first equal sign. [tr#39511]
+
+_________________________
+Debugger
+
+-- We fixed an issue in which the SDI debugger sometimes did not 
+show private symbols in a class method if they were not visible 
+in the first routine that did the access. [tr#39532]
+
+-- In the SDI debugger, the elements of an array of structures 
+are no longer treated as simple alpha fields and instead reflect 
+their structure name. [tr#39539]
+
+________________________
+Installation
+
+-- (Windows) We updated the version of the Microsoft Visual C++ 
+Redistributable for Visual Studio installed by Synergy/DE to 
+14.30.30704.0 (Visual Studio 2022). Clients who updated the 
+redistributable package (vc_redist) with SDE 11 do not need to 
+update again. Clients upgrading to v12 from pre-v11 must either 
+upgrade client or install the latest vc_redist. See the 
+installation instructions for more information. [tr#39562]
+
+-- (Windows) We no longer distribute a buildversion.txt file when 
+installing 32-bit or 64-bit Synergy/DE. You can see the full 
+version and build number now in Programs and Features. [tr#39485]
+
+_________________________
+Runtime
+
+-- A limited GroupBy class is now available to use with Select 
+statements, to provide a subset of functionality of a SQL 
+"GROUP BY" clause. Select.GroupBy acts like Select.OrderBy but 
+will return distinct records based on field specifications. If 
+multiple records have the same values in specified fields, only 
+the first one in field order will be returned. Unlike SQL, the 
+GroupBy class currently does not support aggregate functions on 
+fields. Additionally, NoCaseOrderBy and NoCaseGroupBy classes are 
+available for case-insensitive sorting and grouping of records. 
+NoCaseOrderBy may be combined with regular OrderBy (and 
+NoCaseGroupBy with regular GroupBy) if only some fields require 
+case insensitivity. But OrderBy and GroupBy cannot currently be 
+combined; the results returned by GroupBy will be sorted by the 
+specified fields, but we currently do not allow a subsequent 
+OrderBy. Additional SQL-like functionality is planned for 
+future enhancements. [tr#39463] 
+
+-- (.NET) We added GRFA support for READ, READS, WRITE, and 
+WRITES on stream, sequential, relative, and block files in the 
+.NET runtime. [tr#39628]
+
+-- (.NET) We added support for an optional seventh parameter 
+(scl) to %RX_START_REMOTE in the .NET runtime when -qrntcompat 
+is set to 11010105 or higher. [tr#38945]
+
+-- (OpenVMS) We now provide limited support for global I/O hooks 
+on OpenVMS. A limitation is that the I/O hooks routine must be 
+built into the mainline .exe file. [tr#39631]
+
+-- (OpenVMS) We added support for %DATETIME_TO_I8 and 
+%DATETIME_FROM_I8 on OpenVMS. [tr#39657]
+
+-- (Windows, UNIX) We added new functionality to create a server 
+connection independently of the OPEN statement. See 
+CREATE_SERVER_CONNECTION and DESTROY_SERVER_CONNECTION in the 
+Synergy/DE documentation for details. [tr#39510]
+
+-- (.NET) The .NET Core runtime now only supports .NET 6 
+and higher. [tr#39591] 
+
+-- (.NET) We fixed a problem that occurred in rare cases when 
+using multiple selects using the same From object. Random errors 
+no longer occur on later selects while a prior select is being 
+disposed of by the garbage collector. [tr#39614]
+
+-- We fixed a rare segmentation fault that occurred when opening 
+a channel on a connection from %CREATE_SERVER_CONNECTION. 
+[tr#39613]
+
+-- (.NET) Calling any W_ routine except W_INIT and W_EXIT 
+without a W_INIT no longer causes a segmentation fault. [tr#39606]
+
+-- (.NET) The limited availability 12.0.1.3274 release introduced 
+regressions to some of the Synergy socket routines, particularly 
+%SS_INET_NTOA and %SS_INET_NTOP. These routines either produced 
+runtime exceptions or incorrect results. These issues are 
+resolved in 3275 and later. [tr#39619]
+
+-- (.NET) DESTROY_SERVER_CONNECTION no longer causes a 
+segmentation fault in rare cases of multi-threading and multiple 
+connections to the same server. [tr#39625]
+
+-- (.NET) The Linux runtime is no longer dependent on 
+libtinfo.so.5. [tr#39144]
+
+-- (UNIX) In versions 10.3.3 through 11.1.1i, in some cases the 
+profiler reported negative numbers for CPU time. This has been 
+fixed. [tr#39639]
+
+-- (OpenVMS) All of the places where the Synergy OpenVMS runtime 
+calls LIB$SPAWN (for example, XCALL SPAWN) now set the trusted 
+bit so they work in captive accounts. [tr#39515]
+
+-- (Windows, UNIX) ISAM files with more than 2,147,483,647 
+records are now correctly reported by %ISINFO using NUMRECS. 
+[tr#39469]
+
+-- (Windows, UNIX) In 12.0.1.3272, running the runtime against a 
+program on a system in a grace period with no RUN license caused 
+an F-BADSYS error, "License management problem (I-INTCON Internal 
+consistency failure)." This has been fixed. [tr#39533]
+
+-- (Windows) In 12.0.1.3272, dbs would not print the error 
+message on an unhandled exception. This has been fixed. 
+[tr#39521]
+
+-- (Windows) The dbs runtime no longer crashes when its output is 
+piped to a command but no program is run. [tr#39506]
+
+-- (Windows, UNIX) A memory leak no longer occurs on an encrypted 
+connection to xfServer when a send or receive error occurs. 
+[tr#39589]
+
+-- (OpenVMS) We fixed a problem that was causing Select debug 
+logging to fail following a Select.OrderBy operation on a 
+large ISAM file (greater than 1 MB). [tr#39581]
+
+_________________________________________
+Synergy Configuration Program (SynConfig)
+
+-- With tr#39648, rsynd now validates certificates on 
+startup and terminates if an invalid/expired certificate is 
+found. We added a new "Allow startup with invalid pem file 
+certificate" check box to xfServer and xfServerPlus dialogs, 
+which allows rsynd to log a bad certificate as a warning and 
+continue startup. (This corresponds to the -invcertOK command 
+line option.) [tr#39649]
+
+-- We improved the message for error 14 when starting an 
+xfServer service. [tr#39634]
+
+-- In version 12.0.1.3272, 64-bit SynConfig displayed "32-bit" 
+in the application title bar. This has been fixed. [tr#39560]
+
+-- (Windows) When 32-bit Synergy/DE is installed on a 64-bit OS, 
+and licensing has been removed, 32-bit SynConfig now correctly 
+prevents the user from selecting server licensing. [tr#39554]
+
+_________________________
+Synergy DBMS
+
+-- When patching to a higher file revision, isutl -p now 
+correctly patches rather than converts a file containing more 
+than 2,147,483,647 records. When re-indexing or verifying a file 
+containing more than 2,147,483,647 records, the percentage 
+reported is now correct. Also, the ipar and fconvert utilities 
+report the correct number of records when the file contains more 
+than 2,147,483,647 records. [tr#39553]
+
+-- Fcompare no longer reports index density defined as [0] when 
+it is actually [100] for timestamp and sequence keys that have 
+been rebuilt with the Synergy/DE 12.1 and higher isutl or DBMS 
+utilities. [tr#39500]
+
+-- Ipar *.ism now delineates all output, beginning with a 
+filename in brackets and separating multiple files with a blank 
+line to allow easier parsing, and continues to the next file in 
+the event of an error. [tr#39338]
+
+-- When the ipar utility generates an XDL file, the RESILIENT 
+keyword now correctly displays in the FILE section instead of the 
+RECORD section. [tr#38804]
+
+-- While re-indexing a file using isutl, the following now occurs: 
+on files whose index depth on any key is greater than 4 or index 
+file size is greater than 4 GB, an implied page size conversion 
+(-qfile=page=8192) will occur, raising the size to 8192 if the 
+current page is less than that. Additionally, on files whose 
+current index file size is greater than 4 GB, an implied packing 
+density of 97% will occur. Furthermore, on files with autokeys 
+(SEQUENCE, TIMESTAMP, or CTIMESTAMP), the defined key density for
+those keys will be set to 100% for optimal space management and
+performance. Also, a new conversion option (-qfile=density=0) 
+can be used to remove all defined key density settings on an 
+existing file. This may improve runtime performance of a large 
+file with key density defined on all keys, as we have observed 
+that on very large files, attempting to maintain a packing 
+density can dramatically affect performance, especially with 
+key depths over 4, unless the key is purely sequential 
+(non-random). [tr#39452]
+
+-- We corrected some performance issues that occurred while 
+indexes were being added on very large files (greater than 
+10 GB), especially in files with 8K or larger pages. [tr#39451]
+
+-- Specifying multiple files (or a wildcard specification) while 
+verifying ISAM files using the isutl utility no longer generates 
+a segmentation fault when an empty file is encountered that is 
+immediately preceded by a file reporting an error. [tr#39441]
+
+-- The isutl utility now generates an error when you attempt to 
+add SGRFA to a REV 4 ISAM file (-qfile=sgrfa). In other words, 
+stored GRFA is only supported in REV 6 or higher. Additionally, 
+the ipar utility now reports a warning if a REV 4 ISAM file 
+indicates a partially added SGRFA. The isutl patch option (-p) 
+has been updated to correctly patch a file with this condition 
+to REV 6. [tr#39453]
+
+___________________________________
+Synergy HTTP document transport API
+
+-- (Windows) The use of OpenSSL for HTTPS has been replaced 
+by Microsoft Secure Channel (Schannel). [tr#39358]
+
+-- (UNIX, OpenVMS) In certain cases, the HTTP document transport 
+API failed to return certificate errors, causing a segmentation 
+fault, or inadvertently returned a success value for a failed SSL 
+call that should have returned SSL_ERROR_SSL. Both of these 
+issues have been fixed. [tr#39656]
+
+_________________________
+Utilities
+
+-- The performance of the profiler (profile.dbr and profline.dbr) 
+has been improved when using very large profile data files. 
+[tr#39617]
+
+__________________________________________________________________
+REVISION 12.0.1.3272 (Windows and UNIX)
+
+_________________________
+Compiler
+
+-- We fixed a problem in which certain deprecated defines (such as 
+OS_WINDOWS95) were only defined in the 64-bit compiler instead of 
+the 32-bit compiler. [tr#39409]
+
+-- We fixed an unexpected CLSCRC error that occurred when linking 
+a prototyped static class that has a static constructor, compiled 
+as individual .dbo files and then linked together later. [tr#39464]
+
+-- When instantiating a class and passing an alpha argument, a 
+constructor with a structfield parameter is no longer called 
+incorrectly. [tr#39467]
+
+_________________________
+Runtime
+
+-- (Windows) We replaced OpenSSL routines with native windows CNG 
+routines in DATA_ENCRYPT, DATA_DECRYPT, and DATA_SALTIV. 
+[tr#39360]
+
+-- (Windows) We fixed a problem where, in rare cases with multiple 
+monitors of different scaling on an RDP seamless desktop session, 
+the runtime sometimes crashed. [tr#39447]
+
+-- (Windows) To Support Windows 11 and Server 2022, we added three 
+new defines: OS_WINDOWS11, OS_WINDOWSSERVER2019, and 
+OS_WINDOWSSERVER2022. Those values will be returned by XCALL ENVRN 
+and supported as defines in the compiler. [tr#39455]
+
+-- The StringBuilder Replace method now replaces all characters 
+the way .NET does, instead of ignoring the last character if it 
+matched. [tr#39486]
+
+-- (.NET) We added NuGet packages for ddlib.dll and synxml.dll 
+for .NET Core 6. [tr#39362]
+
+-- (.NET) We added support for the low-level W_ windowing routines 
+when running under .NET Core. [tr#39363]
+
+-- (.NET) We added support for XCALL STTY in Synergy .NET with 
+the <setting_flag> argument equal to 0 or 1. Using XCALL STTY(0) 
+allows console.readline to echo characters. The ACCEPT and READS 
+statements and the W_ routines should not be used while 
+XCALL STTY(0) is in effect. Use XCALL STTY(1) to reset to normal 
+.NET runtime defaults. [tr#39000]
+
+-- (.NET) Converting a single alpha to or from a char no longer 
+creates an invalid Unicode character (for example, the 128 Euro 
+sign). [tr#39428]
+
+-- XCALL VERSN (and %VERSN) now returns an optional build number as 
+its second argument. [tr#39456]
+
+_________________________
+Synergy DBMS
+
+-- While re-indexing a file using isutl, the following now occurs: 
+on files whose index depth on any key is greater than 4 or index 
+file size is greater than 4 GB, an implied page size conversion 
+(-qfile=page=8192) will occur, raising the size to 8192 if the 
+current page is less than that. Additionally, on files whose 
+current index file size is greater than 4 GB, an implied packing 
+density of 97% will occur. Furthermore, on files with autokeys 
+(SEQUENCE, TIMESTAMP, or CTIMESTAMP), the defined key density for
+those keys will be set to 100% for optimal space management and
+performance. Also, a new conversion option (-qfile=density=0) 
+can be used to remove all defined key density settings on an 
+existing file. This may improve runtime performance of a large 
+file with key density defined on all keys, as we have observed 
+that on very large files, attempting to maintain a packing 
+density can dramatically affect performance, especially with 
+key depths over 4, unless the key is purely sequential 
+(non-random). [tr#39452]
+
+-- We corrected some performance issues that occurred while 
+indexes were being added on very large files (greater than 
+10 GB), especially in files with 8K or larger pages. [tr#39451]
+
+-- Specifying multiple files (or a wildcard specification) while 
+verifying ISAM files using the isutl utility no longer generates 
+a segmentation fault when an empty file is encountered that is 
+immediately preceded by a file reporting an error. [tr#39441]
+
+-- The isutl utility now generates an error when you attempt to 
+add SGRFA to a REV 4 ISAM file (-qfile=sgrfa). In other words, 
+stored GRFA is only supported in REV 6 or higher. Additionally, 
+the ipar utility now reports a warning if a REV 4 ISAM file 
+indicates a partially added SGRFA. The isutl patch option (-p) 
+has been updated to correctly patch a file with this condition 
+to REV 6. [tr#39453]
+
+_________________________
+Synergy .NET assembly API
+
+-- We added support for .NET Core 3.1. Support is toggled by 
+setting the new SYNNET_CLR environment variable to 
+v6+. Gennet for .NET Core is now available as a .NET global 
+tool via nuget.org. [tr#39361]
+
+__________________________________________________________________
+RESTRICTIONS
+
+See the restrict.txt file for restrictions identified in earlier 
+versions.
+
+_________________________
+Compiler
+
+-- A string expression with over 1000 string concatenations 
+causes the compiler to seg fault with a stack overflow error. A 
+workaround is to reduce or eliminate string concatentation 
+operators in the expression. [tr#38932]
+
+_________________________
+Runtime
+
+-- (Windows, UNIX) When the header in an .is1 file is incomplete, 
+issuing an ISCLR corrupts the file and makes it unusable. You 
+should run isutl -v to fix invalid files. In this case, recreate 
+the file instead of calling ISCLR, or use O:I modes when opening 
+an FDL file. [tr#23169] 
+
+--(Windows) Parameters passed by ref or out to .NET interop 
+routines may fail if the parameter is cast at the call site. 
+[tr#39276]
+
+_________________________
+Synergy .NET assembly API
+
+-- Passing an object array where the first element is of a 
+different type than subsequent elements will result in an error 
+at runtime (for example, new object[#] {5, "hello"}). Parameters 
+of type delegate fail to encode properly when passing across the 
+.NET to Synergy or Synergy to .NET boundary. Attempts to invoke 
+the passed delegate result in an access violation. Parameters 
+typed as a dynamic array of integer types fail to encode 
+correctly, resulting in a corrupt object handle when accessing 
+elements of the passed array. Passing a dynamic array of 
+float/double/decimal from .NET is not supported. A segmentation 
+fault can occur during runtime shutdown after an unhandled error 
+if an error is then thrown during calls to .NET assembly API 
+destructors. [tr#39419]
+
+-- When an event is based on a delegate whose name is 30
+characters or more, gennet40 will not include that event in the
+generated code. [tr#36490]
+
+__________________________________________________________________
+OPEN INCIDENTS
+
+_________________________
+Compiler
+
+-- Linking in a partial class with a private method causes an 
+unexpected CLSCRC error and a potential dblproto error. The 
+workaround is to combine partial classes in the same source. 
+[tr#36141]
+
+-- Casting ^M of a structure on a handle to @a gives an E_INVCAST 
+error. The workaround is to add an intermediate (a) cast. 
+[tr#34560]
+
+-- (Windows, UNIX) An expected NFND error does not occur when a 
+local variable matches the leading edge of the search path. For 
+example, a method call of variable e of type joe that does not 
+have the method defined matches an e in a higher scope of a 
+different class that does have the method defined. [tr#35469]
+
+-- When building a project, a CLSCRC error can occur when linking 
+an ELB if the base classes aren't first in the prototyping order. 
+[tr#35752]
+
+-- When compiling -qnet identifiers longer than 30 characters, 
+the identifiers are truncated to 30 characters without a warning. 
+[tr#36740]
+
+-- (Windows) Putting an attribute on a property's get or set 
+method causes the compiler to report an unexpected E_PROPPARM 
+error. A workaround to prevent this error is to put "endparams" 
+before the attribute. [tr#38629]
+
+-- A string expression with over 1000 string concatenations 
+causes the compiler to seg fault with stack overflow error. A 
+workaround is to reduce or eliminate string concatentation 
+operators in the expression. [tr#38932]
+
+_________________________
+Debugger
+
+-- The traditional debugger has never supported property 
+evaluation (or running arbitrary code). The user experience would 
+be improved in the Visual Studio debugger if it at least listed 
+properties in scope, even if it didn't evaluate them. [tr#36715]
+
+-- Setting a breakpoint in the debugger does not set it in all 
+source files in all ELBs. [tr#36768]
+
+_____________________________
+Installation
+
+-- (Windows) The Synergy/DE Client uninstallation may hang 
+waiting for caspol to finish: 
+C:\WINDOWS\Microsoft.NET\FrameWork\v4.0.30319\caspol -rg "SynergyDE". 
+[tr#38937]
+
+_____________________________
+Runtime 
+
+-- Issuing the Count property on a Select that contains an 
+OrderBy.Ascending or OrderBy.Descending takes almost twice as long
+as iterating through the same Select (with FOREACH or MoveNext). 
+[tr#36148]
+
+-- Using Where.In within a Select where one or more fields 
+contain the same value results in the same matching record being 
+returned more than once when optimized. [tr#36226]
+
+-- (UNIX) When you execute an LPQUE command, the underlying 
+shell is emitting escape sequences to reset terminal wrap, turn 
+on the cursor, and reset all attributes. However, the shell 
+should not emit any escape sequences for LPQUE. Note that this 
+only occurs when running a UI Toolkit or low-level windowing 
+application. [tr#23243]
+
+-- Enabling a new network adapter or moving a mobile device that 
+activates a new adapter (e.g., wired to wireless) causes xfServer 
+access to fail with a network error when xfServer is running on 
+the same machine as the client application. The workaround is to 
+change the metric on the adapter in the IPv4 config settings. 
+[tr#34498]
+
+-- (.NET) An OPENELB of an assembly whose name has trailing 
+spaces fails. You can use %ATRIM as a workaround. [tr#34392]
+
+-- (.NET) A dynamic array of Synergy structure types causes a 
+non-blittable error when it contains a boolean type. 
+[tr#31494] 
+
+-- (Windows, UNIX) Using a remote spec (@server) in a search list 
+logical doesn't work. "DAT=@myserver,dat" works only if the file 
+exists on myserver; if the file is only in the dat directory (or 
+any other directories following dat in the search list logical), 
+it won't be found. "DAT:dat,@myserver" works only if the file 
+exists in the dat directory (or any other directories preceding 
+the remote server spec in the search list logical). [tr#35395]
+
+-- (Windows) In the DISPLAY statement, the decimal values 7, 8, 
+9, and 10 do not display the crossing, right tee, lower-left 
+corner and bottom tee characters, respectively. [tr#37622]
+
+-- (32-bit) Bitwise OR (.BOR.) of two integer values of differing 
+magnitude may result in unwanted values or'd into larger ones if 
+the first or larger value is an arithmetic temp. For example, 
+(i8+val.bor.i4) does not generate the expected results. In 
+traditional Synergy, a BIGNUM error occurs if negative i8 is 
+passed to %UNSIGNED. [tr#38891]
+
+-- (.NET) If a user closes a channel while a channel operation is 
+in use on another thread, an exception should occur. [tr#38236]
+
+_________________________
+Synergy DBMS
+
+-- The isutl utility does not detect .is1 header corruption. 
+[tr#23168, tr#23169]
+
+-- When copying a file using fconvert (without a description file) 
+that contains portable integers (file options ",i=n:m"), the 
+portable integer definitions aren't transferred to the new file. 
+If a description file is used (-d) that contains the portable 
+integer definitions, they are transferred correctly. [tr#32314]
+
+-- When specifying a remote description file that is an FDL file, 
+fconvert generates an "%FCONVERT: Invalid par file - Bad file 
+option FDL_VERSION" error and fails. [tr#35868]
+
+-- Executing ipar with -g or -gx and specifying the file with 
+a logical or complete path will result in either a 0-byte file 
+with the name of the logical being created in the current 
+directory, a PAR or XDL file named <logical>:<filename> created 
+in the current directory, or the PAR or XDL file created in the
+directory in which the file is located. [tr#36495]
+
+-- When nine key segments are passed to ISAMC, it results in a 
+key with eight segments, and the first segment starts in an 
+incorrect position. [tr#38418]
+
+-- A resilient ISAM fails to fix via rsynd on an OPEN statement 
+if it's out of sync and the open mode is SHARE:READONLY. 
+[tr#39099]
+
+-- When specifying an ISAM key name that contains a comma, bldism 
+fails with $ERR_BADKEY error. [tr#39095]
+
+-- Using isutl -ra on a file with records larger than 64K may 
+cause an $ERR_INTISM error. [tr#39351]
+
+_________________________
+Synergy .NET assembly API
+
+-- When using the Synergy .NET assembly API in conjunction with 
+DevExpress 10.1.4, the embedded DevExpress undo/redo controls do 
+not change to an enabled state when the text in the textbox 
+changes. [tr#31554]
+
+-- When an event is based on a delegate whose name is 30 
+characters or more, gennet40.exe will not include that event in 
+the generated code. [tr#36490]
+
+-- Gennet40 outputs System.StringBuilder wrappers that conflict 
+with Synergy/DE 11 runtime features. A workaround is to build with 
+a 10.3 -qrntcompat value if gennet can't be stopped from 
+generating a StringBuilder. [tr#38903]
+
+_________________________
+Synergy XML API
+
+-- When an invalid XML file is placed into an XML string and this 
+string is placed into a handle and then passed to 
+%XML_PARSER_PARSESTRING, a "Map outside bounds of field or handle"
+error will occur, but only if the XML has all carriage return/line
+feeds removed when placed into the dynamic memory handle. 
+[tr#36465]

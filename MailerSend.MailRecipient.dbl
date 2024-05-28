@@ -1,0 +1,34 @@
+
+namespace SynPSG.EmailTools.MailerSend
+
+    ;;; <summary>
+    ;;; 
+    ;;; </summary>
+    public class MailRecipient
+
+        public readwrite property Name, string
+        public readwrite property Email, string
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        public method MailRecipient
+        proc
+        endmethod
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        ;;; <param name="RecipientName"></param>
+        ;;; <param name="RecipientEmail"></param>
+        public method MailRecipient
+            required in RecipientName, string
+            required in RecipientEmail, string
+        proc
+            Name = RecipientName
+            Email = RecipientEmail
+        endmethod
+
+    endclass
+
+endnamespace

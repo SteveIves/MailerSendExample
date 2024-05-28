@@ -1,0 +1,326 @@
+
+import System.Collections
+import System.Text
+import System.Text.Json
+
+namespace SynPSG.EmailTools.MailerSend
+
+    ;;; <summary>
+    ;;; 
+    ;;; </summary>
+    public class MailMessage
+
+        public readwrite property Sender, @MailSender
+        public readwrite property Recipients, @ArrayList
+        public readwrite property Subject, string
+        public readwrite property Body, string
+        public readwrite property BodyIsHtml, boolean
+        public readwrite property ApiToken, string
+        public readwrite property Attachments, @ArrayList
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        public method MailMessage
+            stack record
+                ErrorMessage, string
+            endrecord
+        proc
+            this.Recipients = new ArrayList()
+            this.Subject = ""
+            this.Body = ""
+            this.BodyIsHtml = false
+            this.Attachments = new ArrayList()
+
+            ;Get the API token from MailerSendApiToken.txt
+            if !getApiToken(ErrorMessage)
+            begin
+                throw new ApplicationException(ErrorMessage)
+            end
+
+        endmethod
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        ;;; <param name="SenderName"></param>
+        ;;; <param name="SenderEmail"></param>
+        public method MailMessage
+            required in SenderName, string
+            required in SenderEmail, string
+            this()
+        proc
+            this.Sender = new MailSender() { Name=SenderName, Email=SenderEmail }
+        endmethod
+
+        ;;; <summary>
+        ;;; Use MailerSend to send an email message to multiple recipients
+        ;;; </summary>
+        ;;; <param name="RecipientName">Recipient name(s)</param>
+        ;;; <param name="RecipientAddress">Recipient email addresses</param>
+        ;;; <param name="Subject">Message subject</param>
+        ;;; <param name="BodyText">Message body</param>
+        ;;; <param name="ErrorMessage"></param>
+        ;;; <returns></returns>
+        public method Send, boolean
+            required out ErrorMessage, string
+            stack record
+                ok, boolean
+                requestBody, string
+            endrecord
+        proc
+            ok = true
+            ErrorMessage = ""
+
+            ;------------------------------------------------------------------
+            ;Validate parameters
+
+            ok = ValidateMessage(ErrorMessage)
+
+            ;------------------------------------------------------------------
+            ;Build the JSON message
+            if (ok)
+            begin
+                requestBody = buildJsonMessage()
+            end
+
+            ;------------------------------------------------------------------
+            ;Send the message to the MailerSend API
+            if (ok)
+            begin
+                data status, int
+                data responseBody, string
+                data requestHeaders, [#]string
+                data responseHeaders, [#]string
+
+                requestHeaders = new string[3]
+                requestHeaders[1] = "host: api.mailersend.com"
+                requestHeaders[2] = "content-type: application/json"
+                requestHeaders[3] = "authorization: Bearer " + this.ApiToken
+
+                status = %http_post("https://api.mailersend.com/v1/email",,requestBody,responseBody,ErrorMessage,requestHeaders,responseHeaders,"mailersend.log")
+
+                using status select
+                (0,200,201,202,204),
+                    nop
+                (400,401,403,404,405,408,421,422,429,500,502,503,504),
+                begin
+                    data jdoc = JsonDocument.Parse(responseBody)
+                    data rootElement = jdoc.RootElement
+                    data messageElement = rootElement.GetProperty("message")
+                    ErrorMessage = messageElement.GetString()
+                    ok = false
+                end
+                endusing
+            end
+
+            mreturn ok
+
+        endmethod
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        ;;; <param name="ErrorMessage"></param>
+        ;;; <returns></returns>
+        public method ValidateMessage, boolean 
+            required out ErrorMessage, string
+            record
+                ok, boolean
+                sb, @StringBuilder
+            endrecord
+        proc
+            ok = true
+            ErrorMessage = ""
+
+            sb = new @StringBuilder()
+            sb.Append("Invalid parameters: ")
+
+            ;Validate SenderName
+            if (String.IsNullOrWhitespace(Sender.Name))
+            begin
+                sb.Append("SenderName ")
+                ok = false
+            end
+
+            ;Validate SenderAddress
+            ;TODO: Validate SenderAddress is actually an email address
+            if (String.IsNullOrWhitespace(this.Sender.Email))
+            begin
+                sb.Append("SenderAddress ")
+                ok = false
+            end
+
+            ;Validate each Recipient.Name
+            if (Recipients.Count < 1) then
+            begin
+                sb.Append("Recipients ")
+                ok = false
+            end
+            else
+            begin
+                data recipient, @MailRecipient
+                foreach recipient in this.Recipients
+                begin
+                    if (String.IsNullOrWhitespace(recipient.Name))
+                    begin
+                        sb.Append("Recipient.Name ")
+                        ok = false
+                        exitloop
+                    end
+                end
+            end
+
+            ;Validate each Recipient.Address
+            ;TODO: Validate each Recipient.Address is actually an email address
+            if (this.Recipients.Count < 1) then
+            begin
+                sb.Append("Recipients ")
+                ok = false
+            end
+            else
+            begin
+                data recipient, @MailRecipient
+                foreach recipient in this.Recipients
+                begin
+                    if (String.IsNullOrWhitespace(recipient.Email))
+                    begin
+                        sb.Append("Recipient.Email ")
+                        ok = false
+                        exitloop
+                    end
+                end
+            end
+
+            ;Validate Subject
+            if (String.IsNullOrWhitespace(this.Subject))
+            begin
+                sb.Append("Subject ")
+                ok = false
+            end
+
+            ;Validate BodyText
+            if (String.IsNullOrWhitespace(this.Body))
+            begin
+                sb.Append("Body ")
+                ok = false
+            end
+
+            ;Any failures?
+            if (!ok)
+            begin
+                ErrorMessage = sb.ToString()
+            end
+
+            mreturn ok
+
+        endmethod
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        ;;; <param name="ErrorMessage"></param>
+        ;;; <returns></returns>
+        private method getApiToken, boolean
+            required out ErrorMessage, string
+            stack record
+                ok, boolean
+                tmpch, i4
+                tmpbuf, a80
+            endrecord
+        proc
+            ok = true
+            ErrorMessage = ""
+            try
+            begin
+                open(tmpch=0,i:s,"MailerSend.ApiToken.txt")
+                reads(tmpch,tmpbuf)
+                if (tmpbuf) then
+                    this.ApiToken = %atrimtostring(tmpbuf)
+                else
+                begin
+                    ErrorMessage = "Failed to read API token from MailerSendApiToken.txt"
+                    ok = false
+                end
+            end
+            catch (e, @Exception)
+            begin
+                ErrorMessage = "Failed to read API token from MailerSendApiToken.txt"
+                ok = false
+            end
+            finally
+            begin
+                if (tmpch)
+                    close tmpch
+            end
+            endtry
+            mreturn ok
+        endmethod
+
+        ;;; <summary>
+        ;;; 
+        ;;; </summary>
+        ;;; <returns></returns>
+        private method buildJsonMessage, string
+            record
+                ok, boolean
+                jsonBuffer, @StringBuilder
+                jsonWriter, @Utf8JsonWriter
+                recipient, @MailRecipient
+            endrecord
+        proc
+            ok = true
+
+            jsonBuffer = new StringBuilder()
+            jsonWriter = Utf8JsonWriter.CreateUtf8JsonWriter(jsonBuffer)
+
+            jsonWriter.WriteStartObject()
+
+            jsonWriter.WriteStartObject("from")
+            jsonWriter.WriteString("email",this.Sender.Email)
+            jsonWriter.WriteString("name",this.Sender.Name)
+            jsonWriter.WriteEndObject()
+
+            jsonWriter.WriteStartArray("to")
+            foreach recipient in this.Recipients
+            begin
+                jsonWriter.WriteStartObject()
+                jsonWriter.WriteString("name",recipient.Name)
+                jsonWriter.WriteString("email",recipient.Email)
+                jsonWriter.WriteEndObject()
+            end
+            jsonWriter.WriteEndArray()
+
+            jsonWriter.WriteString("subject",this.Subject)
+
+            if (BodyIsHtml) then
+                jsonWriter.WriteString("html",this.Body)
+            else
+                jsonWriter.WriteString("text",this.Body)
+
+            if (this.Attachments.Count > 0)
+            begin
+                data atch, @Attachment
+                jsonWriter.WriteStartArray("attachments")
+                foreach atch in this.Attachments
+                begin
+                    jsonWriter.WriteStartObject()
+                    jsonWriter.WriteString("filename",atch.FileName)
+                    jsonWriter.WriteString("content",atch.FileContentBase64)
+                    jsonWriter.WriteString("disposition",atch.Disposition)
+                    jsonWriter.WriteEndObject()
+                end
+                jsonWriter.WriteEndArray()
+            end
+
+            jsonWriter.WriteEndObject()
+            jsonWriter.Flush()
+            jsonWriter.Reset()
+
+            mreturn jsonBuffer.ToString()
+
+        endmethod
+
+    endclass
+
+endnamespace

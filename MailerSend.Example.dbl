@@ -1,0 +1,95 @@
+
+import SynPSG.EmailTools.MailerSend
+
+;;; <summary>
+;;; The main entry point for the application.
+;;; </summary>
+main MailerSendExample
+    record
+        SenderName, string
+        SenderAddress, string
+        RecipientName, string
+        RecipientAddress, string
+        Subject, string
+        Body, string
+        ErrorMessage, string
+        ok, boolean
+    endrecord
+proc
+
+    ok = true
+    xcall flags(7004020,1)
+
+    Console.WriteLine("----------------------------------------")
+    Console.WriteLine("Enter email details:")
+    Console.WriteLine("----------------------------------------")
+
+;    Console.Write("Sender name      : ")
+;    SenderName = Console.ReadLine()
+;
+;    Console.Write("Sender address   : ")
+;    SenderAddress = Console.ReadLine()
+;
+;    Console.Write("Recipient name   : ")
+;    RecipientName = Console.ReadLine()
+;
+;    Console.Write("Recipient address: ")
+;    RecipientAddress = Console.ReadLine()
+;
+;    Console.Write("Message subject  : ")
+;    Subject = Console.ReadLine()
+;
+;    Console.Write("Message content  : ")
+;    Body = Console.ReadLine()
+
+    SenderName = "Steve Ives"
+    SenderAddress = "steve@steveives.com"
+    RecipientName = "Steve Ives"
+    RecipientAddress = "steve.ives@synergex.com"
+    Subject = "New Synergex logo"
+    Body = '<p>You should see two attachments, as well as the Synergex logo embedded below.</p><p><img src=\"cid:SynergexLogo\"/></p>'
+
+    Console.WriteLine("----------------------------------------")
+    Console.WriteLine("Sending message...")
+    Console.WriteLine("----------------------------------------")
+
+    try
+    begin
+        data msg = new MailMessage(SenderName,SenderAddress)
+        msg.Recipients.Add(new MailRecipient(RecipientName,RecipientAddress))
+        msg.Subject = Subject
+        msg.Body = Body
+        msg.BodyIsHtml = true
+
+        ;Add attachments
+        msg.Attachments.Add(new Attachment("DIBOL_For_Beginners_1984.pdf"))
+        msg.Attachments.Add(new Attachment("REL_DBL.TXT"))
+
+        ;Add attachments for embedding in the HTML body
+        msg.Attachments.Add(new Attachment("SynergexLogo.png","SynergexLogo.png"))
+
+        ok = msg.Send(ErrorMessage)
+    end
+    catch (e, @Exception)
+    begin
+        ErrorMessage = e.Message
+        ok = false
+    end
+    endtry
+
+    Console.WriteLine("Message status:")
+
+    if (ok) then
+        Console.WriteLine("The message was sent!")
+    else
+    begin
+        Console.WriteLine("The message was NOT sent!")
+        Console.WriteLine("Error message was: " + ErrorMessage)
+    end
+
+    Console.WriteLine("")
+    Console.Write("Press ENTER: ")
+    Console.ReadLine()
+    Console.WriteLine("")
+
+endmain

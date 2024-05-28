@@ -1,0 +1,152 @@
+
+namespace SynPSG
+
+    public class FileTools
+
+;*******************************************************************************
+.ifndef OS_VMS ;Windows and UNIX code
+;*******************************************************************************
+;
+        public static method FileToHandle, boolean
+
+            required in a_file      ,a      ;File name to load
+            required out a_mh       ,int    ;Memory handle
+            endparams
+
+            stack record ivars
+                ok,     boolean             ;Return value
+                ch,     int                 ;Input file channel
+                blocks, int                 ;Block counter
+                chars,  int                 ;Size of last block (bytes)
+            endrecord
+
+.define D_BUFSZ 32768
+
+            structure block
+                ,a D_BUFSZ                  ;Bytes to read at once (must be less than 64K)
+            endstructure
+
+            stack record avars
+                buf, a D_BUFSZ              ;IO Buffer
+            endrecord
+
+        proc
+            init ivars, avars
+            ok = true
+
+            ;Open input file
+            open(ch=0,u,a_file) [ERR=err] 
+
+            ;Error checking for file open
+            if (false)
+        err,    ok = false
+
+            if (ok)
+            begin
+                clear ^i(^m(a_mh))
+
+                ;Read data from file in "block size" chunks
+                repeat
+                begin
+                    clear buf
+                    gets(ch,buf,ef)
+                    blocks+=1
+                    a_mh = %mem_proc(DM_RESIZ,^size(block)*blocks,a_mh)
+                    ^m(block[blocks],a_mh)=buf
+                end
+
+                ;We hit EOF, save away the final buffer of data
+            ef, chars=%rsize
+                if (chars)
+                begin
+                    blocks+=1
+                    a_mh = %mem_proc(DM_RESIZ,^size(block)*blocks,a_mh)
+                    ^m(block[blocks],a_mh)=buf
+
+                    ;Resize handle to exact size of file.
+                    a_mh = %mem_proc(DM_RESIZ,((^size(block)*(blocks-1))+(chars)),a_mh)
+                end
+
+            end
+
+            if (ok)
+                close ch
+
+            mreturn ok
+
+        endmethod
+;
+;*******************************************************************************
+.else ;VMS CODE
+;*******************************************************************************
+;
+;VMS CODE - SEEMS TO WORK FOR BINARY FILES, BUT NOT FOR TEXT FILES???????
+;
+        public staic method file_to_handle, boolean
+
+            required in a_file      ,a              ;File name to load
+            required out a_mh        ,n              ;Memory handle
+            endparams
+
+            stack record ivars
+                ok          ,boolean         ;Routine return value
+                ch          ,int             ;Input file channel
+                mc          ,int             ;Characters read
+                ms          ,int             ;Size of memory array
+                blocks      ,int             ;Number of blocks read
+                len         ,int             ;Length of a string
+            endrecord
+
+            .define D_BUFSZ 512
+
+            structure chunk
+                            ,a D_BUFSZ
+            endstructure
+
+            stack record avars
+                buf         ,a D_BUFSZ      ;IO Buffer
+            endrecord
+
+        proc
+            ok = true
+            init ivars, avars
+
+            ;Open input file
+            open(ch=0,i:b,a_file) [ERR=err]
+        
+            ;Error checking for file open
+            if (false)
+        err,    ok = false
+
+            if (ok)
+            begin
+                ;Read data from file one chunk at a time!
+                repeat
+                begin
+                    reads(ch,buf,ef)
+                    a_mh = %mem_proc(DM_RESIZ,D_BUFSZ*(blocks+=1),a_mh)
+                    ^m(chunk[blocks],a_mh) = buf
+                end
+        ef,
+                if (len=%rdlen)
+                begin
+                    a_mh = %mem_proc(DM_RESIZ,D_BUFSZ*blocks+len,a_mh)
+                    ^m(chunk[blocks+1](1:len),a_mh) = buf(1:len)
+                end
+
+            end
+
+            if (ok)
+                close ch
+
+            mreturn ok
+
+        endmethod
+
+;*******************************************************************************
+.endc ;END OF VMS CODE
+;*******************************************************************************
+
+    endclass
+
+endnamespace
